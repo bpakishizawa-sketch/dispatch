@@ -229,7 +229,6 @@
     }
 
     .space10{ height:10px; }
-    .space8{ height:8px; }
 
     .actions{
       display:flex;
@@ -329,6 +328,8 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
@@ -340,17 +341,14 @@
       remove
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    /*
-      ここを本番用 firebaseConfig に差し替えてください
-    */
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyBUKBDIyzCxy-LawDU4zhmzyJBXgfS5pNI",
+      authDomain: "dispatch-d25b8.firebaseapp.com",
+      databaseURL: "https://dispatch-d25b8-default-rtdb.firebaseio.com",
+      projectId: "dispatch-d25b8",
+      storageBucket: "dispatch-d25b8.firebasestorage.app",
+      messagingSenderId: "762412395171",
+      appId: "1:762412395171:web:65e2ff185d396d94eb6d16"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -420,6 +418,11 @@
         .replaceAll("'", "&#39;");
     }
 
+    function normalizeNumber(value){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
     function initMap(){
       map = L.map("map").setView([36.0, 139.4], 10);
 
@@ -455,11 +458,6 @@
     function clearPointMarkers(){
       Object.values(pointMarkers).forEach(marker => map.removeLayer(marker));
       pointMarkers = {};
-    }
-
-    function normalizeNumber(value){
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
     }
 
     function renderVehicles(){
@@ -774,10 +772,5 @@
 
     initMap();
   </script>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
-  ></script>
 </body>
 </html>

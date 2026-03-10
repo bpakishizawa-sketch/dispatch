@@ -3,10 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>dispatch</title>
+  <title>生コン配車システム</title>
+  <style>
+    body{
+      font-family: system-ui, sans-serif;
+      margin:0;
+      background:#f5f7fb;
+      color:#222;
+    }
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+      padding:40px 20px;
+    }
+    h1{
+      margin:0 0 12px;
+      font-size:32px;
+    }
+    p{
+      font-size:16px;
+      line-height:1.7;
+    }
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:24px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.08);
+      margin-top:24px;
+    }
+    .btns{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:20px;
+    }
+    a.btn{
+      display:inline-block;
+      padding:14px 20px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:700;
+      background:#2563eb;
+      color:#fff;
+    }
+    a.sub{
+      background:#16a34a;
+    }
+  </style>
 </head>
 <body>
-  <h1>生コン配車システム</h1>
-  <p>GitHub Pages の初期ページです。</p>
+  <div class="wrap">
+    <h1>生コン配車システム</h1>
+    <p>GPS位置共有・現場管理・待機場所管理のためのWebシステムです。</p>
+
+    <div class="card">
+      <h2>メニュー</h2>
+      <div class="btns">
+        <a class="btn" href="admin.html">管理画面を開く</a>
+        <a class="btn sub" href="driver.html">ドライバー画面を開く</a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -298,7 +298,6 @@
       ref,
       onValue,
       off,
-      set,
       update,
       remove,
       serverTimestamp
@@ -615,12 +614,19 @@
             `;
           }catch(error){
             console.error(error);
-            gpsStatus.textContent = "FirebaseへのGPS送信に失敗しました";
+            gpsStatus.innerHTML = `
+              通信エラーでGPS送信に失敗しました。<br>
+              セッションは保持中です。<br>
+              電波復帰後に再送信されます。
+            `;
           }
         },
         (error) => {
           console.error(error);
-          gpsStatus.textContent = `GPS取得エラー: ${error.message}`;
+          gpsStatus.innerHTML = `
+            GPS取得エラー: ${escapeHtml(error.message)}<br>
+            ログアウトはしていません。
+          `;
         },
         {
           enableHighAccuracy: true,
@@ -630,44 +636,87 @@
       );
     }
 
-    async function markOfflineAndRemove(){
+    async function removeVehicleOnLogout(){
       if (!session.companyCode || !session.vehicleId) return;
 
       const vehicleRef = ref(db, `companies/${session.companyCode}/vehicles/${session.vehicleId}`);
-
-      try{
-        await update(vehicleRef, {
-          online: false,
-          loggedOutAt: new Date().toISOString()
-        });
-      }catch(error){
-        console.error(error);
-      }
+      await remove(vehicleRef);
     }
 
     async function loginAndStart(newSession){
-      session = {
+      const nextSession = {
         companyCode: newSession.companyCode.trim(),
         vehicleId: newSession.vehicleId.trim(),
         vehicleName: newSession.vehicleName.trim()
       };
 
-      if (!session.companyCode || !session.vehicleId){
+      if (!nextSession.companyCode || !nextSession.vehicleId){
         alert("会社コードと車両IDは必須です");
         return;
       }
 
+      const isChangingSession =
+        session.companyCode &&
+        session.vehicleId &&
+        (
+          session.companyCode !== nextSession.companyCode ||
+          session.vehicleId !== nextSession.vehicleId
+        );
+
+      if (isChangingSession){
+        const changeOk = confirm(
+          `現在の接続先から切り替えます。\n\n` +
+          `現在: ${session.companyCode} / ${session.vehicleId}\n` +
+          `変更後: ${nextSession.companyCode} / ${nextSession.vehicleId}\n\n` +
+          `OKで切り替えます。`
+        );
+        if (!changeOk) return;
+      }
+
+      session = nextSession;
       saveSession();
       applySessionToInputs();
       renderCurrentInfo();
       startPointsListener();
       startGpsWatch();
+
+      gpsStatus.innerHTML = `
+        セッションを保存しました。<br>
+        会社コード: ${escapeHtml(session.companyCode)}<br>
+        車両ID: ${escapeHtml(session.vehicleId)}
+      `;
     }
 
     async function logout(){
+      if (!session.companyCode || !session.vehicleId){
+        session = {
+          companyCode: "",
+          vehicleId: "",
+          vehicleName: ""
+        };
+        clearSession();
+        applySessionToInputs();
+        renderCurrentInfo();
+        gpsStatus.textContent = "ログアウトしました";
+        return;
+      }
+
       stopGpsWatch();
+
+      try{
+        await removeVehicleOnLogout();
+      }catch(error){
+        console.error(error);
+        gpsStatus.innerHTML = `
+          ログアウト処理に失敗しました。<br>
+          通信状態を確認して再度実行してください。<br>
+          セッションは保持したままです。
+        `;
+        startGpsWatch();
+        return;
+      }
+
       stopPointsListener();
-      await markOfflineAndRemove();
 
       session = {
         companyCode: "",
@@ -723,8 +772,26 @@
     });
 
     logoutBtn.addEventListener("click", async () => {
-      const ok = confirm("ログアウトしますか？");
-      if (!ok) return;
+      if (!session.companyCode || !session.vehicleId){
+        alert("現在ログインしていません");
+        return;
+      }
+
+      const first = confirm(
+        `ログアウト確認\n\n` +
+        `会社コード: ${session.companyCode}\n` +
+        `車両ID: ${session.vehicleId}\n` +
+        `表示名: ${session.vehicleName || session.vehicleId}\n\n` +
+        `OKでログアウト確認を進めます。`
+      );
+      if (!first) return;
+
+      const second = confirm(
+        `この操作で、現在の会社の車両表示を削除します。\n` +
+        `本当にログアウトしますか？`
+      );
+      if (!second) return;
+
       await logout();
     });
 

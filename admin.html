@@ -135,6 +135,7 @@
       font-size:13px;
       color:#374151;
       word-break:break-all;
+      line-height:1.6;
     }
 
     .legend{
@@ -277,7 +278,7 @@
             <h2>車両一覧</h2>
             <span id="vehicleCount" class="badge">0台</span>
           </div>
-          <div class="small">vehicles をリアルタイム表示</div>
+          <div class="small">vehicles をリアルタイム表示 / 残った応援車も削除可能</div>
           <div id="vehicleList" class="list"></div>
         </div>
 
@@ -477,15 +478,21 @@
         const lng = normalizeNumber(data?.lng ?? data?.longitude);
         const updatedAt = data?.updatedAt || "";
         const name = data?.name || vehicleId;
+        const online = data?.online;
+        const onlineLabel = online === false ? "offline" : "online";
 
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
           <div class="item-title">${escapeHtml(name)}</div>
           <div class="item-sub">vehicleId: ${escapeHtml(vehicleId)}</div>
+          <div class="item-sub">status: ${escapeHtml(onlineLabel)}</div>
           <div class="item-sub">lat: ${lat ?? "-"}</div>
           <div class="item-sub">lng: ${lng ?? "-"}</div>
           <div class="item-sub">updatedAt: ${escapeHtml(updatedAt)}</div>
+          <div class="actions">
+            <button data-id="${escapeHtml(vehicleId)}" class="delete-vehicle-btn btn-red">車両削除</button>
+          </div>
         `;
         vehicleList.appendChild(div);
 
@@ -498,6 +505,7 @@
             <div style="min-width:180px;">
               <b>${escapeHtml(name)}</b><br>
               vehicleId: ${escapeHtml(vehicleId)}<br>
+              status: ${escapeHtml(onlineLabel)}<br>
               lat: ${lat}<br>
               lng: ${lng}
             </div>
@@ -505,6 +513,13 @@
 
           vehicleMarkers[vehicleId] = marker;
         }
+      });
+
+      document.querySelectorAll(".delete-vehicle-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const vehicleId = e.currentTarget.dataset.id;
+          await deleteVehicle(vehicleId);
+        });
       });
     }
 
@@ -599,6 +614,25 @@
           await deletePoint(type, pointId);
         });
       });
+    }
+
+    async function deleteVehicle(vehicleId){
+      if (!companyCode) {
+        alert("先に会社コードへ接続してください");
+        return;
+      }
+
+      const ok = confirm(`車両を削除しますか？\n${vehicleId}`);
+      if (!ok) return;
+
+      try {
+        const vehicleRef = ref(db, `companies/${companyCode}/vehicles/${vehicleId}`);
+        await remove(vehicleRef);
+        statusText.textContent = `車両を削除しました: ${vehicleId}`;
+      } catch (error) {
+        console.error(error);
+        alert("車両削除に失敗しました");
+      }
     }
 
     async function deletePoint(type, pointId){

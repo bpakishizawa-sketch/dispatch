@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dispatch 管理者画面</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --line:#e5e7eb;
+      --text:#111827;
+      --sub:#6b7280;
+      --blue:#2563eb;
+      --red:#dc2626;
+      --green:#16a34a;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:16px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      background:#111827;
+      color:#fff;
+      padding:16px;
+    }
+
+    header h1{
+      margin:0;
+      font-size:20px;
+    }
+
+    header .sub{
+      margin-top:6px;
+      font-size:13px;
+      color:#d1d5db;
+    }
+
+    .wrap{
+      max-width:1400px;
+      margin:0 auto;
+      padding:16px;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap:10px;
+      margin-bottom:16px;
+    }
+
+    @media (max-width: 980px){
+      .topbar{
+        grid-template-columns:1fr;
+      }
+    }
+
+    input, select, button{
+      width:100%;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #d1d5db;
+      font-size:14px;
+      background:#fff;
+    }
+
+    button{
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .btn-primary{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+    }
+
+    .btn-red{
+      background:#fff;
+      color:#b91c1c;
+      border-color:#fecaca;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:16px;
+    }
+
+    @media (max-width: 980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+
+    .panel{
+      padding:14px;
+      margin-bottom:16px;
+    }
+
+    .panel h2{
+      margin:0 0 10px;
+      font-size:16px;
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--sub);
+    }
+
+    .status{
+      margin-top:10px;
+      font-size:13px;
+      color:#374151;
+      word-break:break-all;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f3f4f6;
+      color:#374151;
+    }
+
+    .badge-blue{
+      background:#dbeafe;
+      color:#1d4ed8;
+    }
+
+    .badge-red{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .badge-green{
+      background:#dcfce7;
+      color:#15803d;
+    }
+
+    .row-between{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .item{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+
+    .item-title{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+
+    .item-sub{
+      font-size:12px;
+      color:var(--sub);
+      line-height:1.5;
+      word-break:break-word;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .assign-box{
+      margin-top:12px;
+      padding:12px;
+      border:1px dashed #cbd5e1;
+      border-radius:12px;
+      background:#f8fafc;
+    }
+
+    .map-card{
+      padding:10px;
+    }
+
+    #map{
+      width:100%;
+      height:74vh;
+      min-height:520px;
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    .space10{ height:10px; }
+    .space8{ height:8px; }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .actions button{
+      width:auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>dispatch 管理者画面</h1>
+    <div class="sub">生コン向け GPS 配車 / 地点管理</div>
+  </header>
+
+  <div class="wrap">
+    <div class="topbar">
+      <input id="companyCodeInput" placeholder="会社コードを入力" />
+      <button id="connectBtn" class="btn-primary">接続</button>
+      <button id="myLocationBtn">管理者位置を取得</button>
+      <button id="reloadBtn">再読込</button>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="card panel">
+          <h2>接続情報</h2>
+          <div class="small">現在の会社コード</div>
+          <div id="currentCompanyCode" class="status">未接続</div>
+
+          <div class="legend">
+            <span class="badge badge-blue">青 = 車両</span>
+            <span class="badge badge-red">赤 = 地点</span>
+            <span class="badge badge-green">緑 = 管理者</span>
+          </div>
+
+          <div id="statusText" class="status">会社コードを入力して接続してください。</div>
+        </div>
+
+        <div class="card panel">
+          <div class="row-between">
+            <h2>車両一覧</h2>
+            <span id="vehicleCount" class="badge">0台</span>
+          </div>
+          <div class="small">vehicles をリアルタイム表示</div>
+          <div id="vehicleList" class="list"></div>
+        </div>
+
+        <div class="card panel">
+          <h2>地点追加</h2>
+          <div class="small">地図クリックで緯度経度を取得し、points に保存します</div>
+
+          <div class="assign-box">
+            <div class="grid2">
+              <input id="pointNameInput" placeholder="地点名 例: ○○現場" />
+              <select id="pointTypeSelect">
+                <option value="site">site（現場）</option>
+                <option value="waiting">waiting（待機場所）</option>
+              </select>
+            </div>
+
+            <div class="space10"></div>
+
+            <input id="pointMemoInput" placeholder="メモ 例: 入口は北側" />
+
+            <div class="space10"></div>
+
+            <div class="grid2">
+              <input id="pointLatInput" placeholder="緯度" readonly />
+              <input id="pointLngInput" placeholder="経度" readonly />
+            </div>
+
+            <div class="space10"></div>
+
+            <button id="savePointBtn" class="btn-primary">地点を保存</button>
+            <div id="pointStatus" class="status">まだ地図上で地点を選択していません。</div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <div class="row-between">
+            <h2>地点一覧</h2>
+            <span id="pointCount" class="badge">0件</span>
+          </div>
+          <div class="small">points/site または points/waiting を表示</div>
+          <div id="pointList" class="list"></div>
+        </div>
+      </div>
+
+      <div class="card map-card">
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      off,
+      set,
+      remove
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    /*
+      ここを本番用 firebaseConfig に差し替えてください
+    */
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let map;
+    let companyCode = "";
+
+    let vehiclesRef = null;
+    let pointsRef = null;
+
+    let vehicleMarkers = {};
+    let pointMarkers = {};
+
+    let vehiclesCache = {};
+    let pointsCache = {};
+
+    let adminMarker = null;
+    let tempPointMarker = null;
+
+    const companyCodeInput = document.getElementById("companyCodeInput");
+    const connectBtn = document.getElementById("connectBtn");
+    const myLocationBtn = document.getElementById("myLocationBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    const currentCompanyCode = document.getElementById("currentCompanyCode");
+    const statusText = document.getElementById("statusText");
+
+    const vehicleCount = document.getElementById("vehicleCount");
+    const vehicleList = document.getElementById("vehicleList");
+
+    const pointNameInput = document.getElementById("pointNameInput");
+    const pointTypeSelect = document.getElementById("pointTypeSelect");
+    const pointMemoInput = document.getElementById("pointMemoInput");
+    const pointLatInput = document.getElementById("pointLatInput");
+    const pointLngInput = document.getElementById("pointLngInput");
+    const savePointBtn = document.getElementById("savePointBtn");
+    const pointStatus = document.getElementById("pointStatus");
+
+    const pointCount = document.getElementById("pointCount");
+    const pointList = document.getElementById("pointList");
+
+    function makeCircleIcon(color){
+      return L.divIcon({
+        html: `
+          <div style="
+            width:18px;
+            height:18px;
+            border-radius:50%;
+            background:${color};
+            border:3px solid #fff;
+            box-shadow:0 0 0 1px rgba(0,0,0,.18);
+          "></div>
+        `,
+        className: "",
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+    }
+
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function initMap(){
+      map = L.map("map").setView([36.0, 139.4], 10);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+
+      map.on("click", (e) => {
+        const { lat, lng } = e.latlng;
+        pointLatInput.value = lat.toFixed(6);
+        pointLngInput.value = lng.toFixed(6);
+
+        pointStatus.textContent = `地点候補を選択中: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+        if (tempPointMarker) {
+          map.removeLayer(tempPointMarker);
+        }
+
+        tempPointMarker = L.marker([lat, lng], {
+          icon: makeCircleIcon("#dc2626")
+        }).addTo(map);
+
+        tempPointMarker.bindPopup("新規地点候補").openPopup();
+      });
+    }
+
+    function clearVehicleMarkers(){
+      Object.values(vehicleMarkers).forEach(marker => map.removeLayer(marker));
+      vehicleMarkers = {};
+    }
+
+    function clearPointMarkers(){
+      Object.values(pointMarkers).forEach(marker => map.removeLayer(marker));
+      pointMarkers = {};
+    }
+
+    function normalizeNumber(value){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function renderVehicles(){
+      clearVehicleMarkers();
+
+      const entries = Object.entries(vehiclesCache || {});
+      vehicleCount.textContent = `${entries.length}台`;
+      vehicleList.innerHTML = "";
+
+      if (entries.length === 0){
+        vehicleList.innerHTML = `<div class="item"><div class="item-sub">車両データがありません</div></div>`;
+        return;
+      }
+
+      entries.forEach(([vehicleId, data]) => {
+        const lat = normalizeNumber(data?.lat ?? data?.latitude);
+        const lng = normalizeNumber(data?.lng ?? data?.longitude);
+        const updatedAt = data?.updatedAt || "";
+        const name = data?.name || vehicleId;
+
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="item-title">${escapeHtml(name)}</div>
+          <div class="item-sub">vehicleId: ${escapeHtml(vehicleId)}</div>
+          <div class="item-sub">lat: ${lat ?? "-"}</div>
+          <div class="item-sub">lng: ${lng ?? "-"}</div>
+          <div class="item-sub">updatedAt: ${escapeHtml(updatedAt)}</div>
+        `;
+        vehicleList.appendChild(div);
+
+        if (lat !== null && lng !== null){
+          const marker = L.marker([lat, lng], {
+            icon: makeCircleIcon("#2563eb")
+          }).addTo(map);
+
+          marker.bindPopup(`
+            <div style="min-width:180px;">
+              <b>${escapeHtml(name)}</b><br>
+              vehicleId: ${escapeHtml(vehicleId)}<br>
+              lat: ${lat}<br>
+              lng: ${lng}
+            </div>
+          `);
+
+          vehicleMarkers[vehicleId] = marker;
+        }
+      });
+    }
+
+    function flattenPoints(pointsRoot){
+      const result = [];
+
+      const siteObj = pointsRoot?.site || {};
+      const waitingObj = pointsRoot?.waiting || {};
+
+      Object.entries(siteObj).forEach(([pointId, data]) => {
+        result.push({
+          pointId,
+          type: "site",
+          ...data
+        });
+      });
+
+      Object.entries(waitingObj).forEach(([pointId, data]) => {
+        result.push({
+          pointId,
+          type: "waiting",
+          ...data
+        });
+      });
+
+      return result;
+    }
+
+    function renderPoints(){
+      clearPointMarkers();
+
+      const list = flattenPoints(pointsCache);
+      pointCount.textContent = `${list.length}件`;
+      pointList.innerHTML = "";
+
+      if (list.length === 0){
+        pointList.innerHTML = `<div class="item"><div class="item-sub">地点データがありません</div></div>`;
+        return;
+      }
+
+      list.forEach((point) => {
+        const lat = normalizeNumber(point?.lat ?? point?.latitude);
+        const lng = normalizeNumber(point?.lng ?? point?.longitude);
+        const name = point?.name || point.pointId;
+        const memo = point?.memo || "";
+        const type = point?.type || "";
+        const createdAt = point?.createdAt || "";
+
+        const typeLabel = type === "waiting" ? "waiting" : "site";
+
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="item-title">${escapeHtml(name)}</div>
+          <div class="item-sub">type: ${escapeHtml(typeLabel)}</div>
+          <div class="item-sub">pointId: ${escapeHtml(point.pointId)}</div>
+          <div class="item-sub">memo: ${escapeHtml(memo || "-")}</div>
+          <div class="item-sub">lat: ${lat ?? "-"}</div>
+          <div class="item-sub">lng: ${lng ?? "-"}</div>
+          <div class="item-sub">createdAt: ${escapeHtml(createdAt)}</div>
+          <div class="actions">
+            <button data-type="${escapeHtml(type)}" data-id="${escapeHtml(point.pointId)}" class="delete-point-btn btn-red">削除</button>
+          </div>
+        `;
+        pointList.appendChild(div);
+
+        if (lat !== null && lng !== null){
+          const markerKey = `${type}_${point.pointId}`;
+          const marker = L.marker([lat, lng], {
+            icon: makeCircleIcon("#dc2626")
+          }).addTo(map);
+
+          marker.bindPopup(`
+            <div style="min-width:180px;">
+              <b>${escapeHtml(name)}</b><br>
+              type: ${escapeHtml(typeLabel)}<br>
+              pointId: ${escapeHtml(point.pointId)}<br>
+              memo: ${escapeHtml(memo || "-")}<br>
+              lat: ${lat}<br>
+              lng: ${lng}
+            </div>
+          `);
+
+          pointMarkers[markerKey] = marker;
+        }
+      });
+
+      document.querySelectorAll(".delete-point-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const type = e.currentTarget.dataset.type;
+          const pointId = e.currentTarget.dataset.id;
+          await deletePoint(type, pointId);
+        });
+      });
+    }
+
+    async function deletePoint(type, pointId){
+      if (!companyCode) {
+        alert("先に会社コードへ接続してください");
+        return;
+      }
+
+      const ok = confirm(`削除しますか？\n${type} / ${pointId}`);
+      if (!ok) return;
+
+      try {
+        const pointRef = ref(db, `companies/${companyCode}/points/${type}/${pointId}`);
+        await remove(pointRef);
+        pointStatus.textContent = `削除しました: ${type}/${pointId}`;
+      } catch (error) {
+        console.error(error);
+        alert("削除に失敗しました");
+      }
+    }
+
+    function makePointId(type){
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      return `${type}_${y}${m}${d}_${hh}${mm}${ss}`;
+    }
+
+    async function savePoint(){
+      if (!companyCode){
+        alert("先に会社コードへ接続してください");
+        return;
+      }
+
+      const name = pointNameInput.value.trim();
+      const type = pointTypeSelect.value;
+      const memo = pointMemoInput.value.trim();
+      const lat = normalizeNumber(pointLatInput.value);
+      const lng = normalizeNumber(pointLngInput.value);
+
+      if (!name){
+        alert("地点名を入力してください");
+        return;
+      }
+
+      if (lat === null || lng === null){
+        alert("先に地図をクリックして地点を選択してください");
+        return;
+      }
+
+      const pointId = makePointId(type);
+
+      const payload = {
+        pointId,
+        name,
+        type,
+        memo,
+        lat,
+        lng,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const pointRef = ref(db, `companies/${companyCode}/points/${type}/${pointId}`);
+        await set(pointRef, payload);
+
+        pointStatus.textContent = `保存しました: ${type}/${pointId}`;
+
+        pointNameInput.value = "";
+        pointMemoInput.value = "";
+        pointLatInput.value = "";
+        pointLngInput.value = "";
+
+        if (tempPointMarker){
+          map.removeLayer(tempPointMarker);
+          tempPointMarker = null;
+        }
+      } catch (error) {
+        console.error(error);
+        alert("地点保存に失敗しました");
+      }
+    }
+
+    function stopListeners(){
+      if (vehiclesRef) off(vehiclesRef);
+      if (pointsRef) off(pointsRef);
+
+      vehiclesRef = null;
+      pointsRef = null;
+      vehiclesCache = {};
+      pointsCache = {};
+
+      clearVehicleMarkers();
+      clearPointMarkers();
+
+      vehicleList.innerHTML = "";
+      pointList.innerHTML = "";
+      vehicleCount.textContent = "0台";
+      pointCount.textContent = "0件";
+    }
+
+    function connectCompany(){
+      const code = companyCodeInput.value.trim();
+      if (!code){
+        alert("会社コードを入力してください");
+        return;
+      }
+
+      stopListeners();
+
+      companyCode = code;
+      currentCompanyCode.textContent = companyCode;
+      statusText.textContent = `接続中: companies/${companyCode}`;
+
+      vehiclesRef = ref(db, `companies/${companyCode}/vehicles`);
+      pointsRef = ref(db, `companies/${companyCode}/points`);
+
+      onValue(vehiclesRef, (snapshot) => {
+        vehiclesCache = snapshot.val() || {};
+        renderVehicles();
+      });
+
+      onValue(pointsRef, (snapshot) => {
+        pointsCache = snapshot.val() || {};
+        renderPoints();
+      });
+    }
+
+    function setAdminLocation(){
+      if (!navigator.geolocation){
+        alert("この端末では位置情報が使えません");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          if (adminMarker){
+            map.removeLayer(adminMarker);
+          }
+
+          adminMarker = L.marker([lat, lng], {
+            icon: makeCircleIcon("#16a34a")
+          }).addTo(map);
+
+          adminMarker.bindPopup("管理者").openPopup();
+          map.setView([lat, lng], 14);
+        },
+        (err) => {
+          console.error(err);
+          alert("管理者位置の取得に失敗しました");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    connectBtn.addEventListener("click", connectCompany);
+    reloadBtn.addEventListener("click", () => location.reload());
+    myLocationBtn.addEventListener("click", setAdminLocation);
+    savePointBtn.addEventListener("click", savePoint);
+
+    initMap();
+  </script>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+</body>
+</html>

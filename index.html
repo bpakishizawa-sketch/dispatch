@@ -1,68 +1,739 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>生コン配車システム</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dispatch 車載画面</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
   <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --line:#e5e7eb;
+      --text:#111827;
+      --sub:#6b7280;
+      --blue:#2563eb;
+      --red:#dc2626;
+      --green:#16a34a;
+      --shadow:0 8px 24px rgba(0,0,0,.08);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; }
+
     body{
-      font-family: system-ui, sans-serif;
       margin:0;
-      background:#f5f7fb;
-      color:#222;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
     }
-    .wrap{
-      max-width:900px;
-      margin:0 auto;
-      padding:40px 20px;
-    }
-    h1{
-      margin:0 0 12px;
-      font-size:32px;
-    }
-    p{
-      font-size:16px;
-      line-height:1.7;
-    }
-    .card{
-      background:#fff;
-      border-radius:16px;
-      padding:24px;
-      box-shadow:0 4px 16px rgba(0,0,0,0.08);
-      margin-top:24px;
-    }
-    .btns{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:20px;
-    }
-    a.btn{
-      display:inline-block;
-      padding:14px 20px;
-      border-radius:12px;
-      text-decoration:none;
-      font-weight:700;
-      background:#2563eb;
+
+    header{
+      background:#111827;
       color:#fff;
+      padding:16px;
     }
-    a.sub{
-      background:#16a34a;
+
+    header h1{
+      margin:0;
+      font-size:20px;
     }
+
+    header .sub{
+      margin-top:6px;
+      font-size:13px;
+      color:#d1d5db;
+    }
+
+    .wrap{
+      max-width:1400px;
+      margin:0 auto;
+      padding:16px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:380px 1fr;
+      gap:16px;
+    }
+
+    @media (max-width: 980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+
+    .panel{
+      padding:14px;
+      margin-bottom:16px;
+    }
+
+    .panel h2{
+      margin:0 0 10px;
+      font-size:16px;
+    }
+
+    input, button, select{
+      width:100%;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #d1d5db;
+      font-size:14px;
+      background:#fff;
+    }
+
+    button{
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .btn-primary{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+    }
+
+    .btn-red{
+      background:#fff;
+      color:#b91c1c;
+      border-color:#fecaca;
+    }
+
+    .btn-green{
+      background:#fff;
+      color:#15803d;
+      border-color:#bbf7d0;
+    }
+
+    .top-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--sub);
+    }
+
+    .status{
+      margin-top:10px;
+      font-size:13px;
+      color:#374151;
+      word-break:break-word;
+      line-height:1.6;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f3f4f6;
+      color:#374151;
+    }
+
+    .badge-blue{
+      background:#dbeafe;
+      color:#1d4ed8;
+    }
+
+    .badge-red{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .badge-green{
+      background:#dcfce7;
+      color:#15803d;
+    }
+
+    .row-between{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .actions button{
+      width:auto;
+      min-width:120px;
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .item{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+
+    .item-title{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+
+    .item-sub{
+      font-size:12px;
+      color:var(--sub);
+      line-height:1.5;
+      word-break:break-word;
+    }
+
+    #map{
+      width:100%;
+      height:80vh;
+      min-height:560px;
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    .map-card{
+      padding:10px;
+    }
+
+    .space10{ height:10px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>生コン配車システム</h1>
-    <p>GPS位置共有・現場管理・待機場所管理のためのWebシステムです。</p>
+  <header>
+    <h1>dispatch 車載画面</h1>
+    <div class="sub">GPS送信 / 地点表示 / 会社切替</div>
+  </header>
 
-    <div class="card">
-      <h2>メニュー</h2>
-      <div class="btns">
-        <a class="btn" href="admin.html">管理画面を開く</a>
-        <a class="btn sub" href="driver.html">ドライバー画面を開く</a>
+  <div class="wrap">
+    <div class="layout">
+      <div>
+        <div class="card panel">
+          <h2>ログイン / 切替</h2>
+
+          <div class="top-grid">
+            <input id="companyCodeInput" placeholder="会社コード" />
+            <input id="vehicleIdInput" placeholder="車両ID 例: truck01" />
+          </div>
+
+          <div class="space10"></div>
+
+          <input id="vehicleNameInput" placeholder="表示名 例: 1号車" />
+
+          <div class="actions">
+            <button id="saveLoginBtn" class="btn-primary">保存して開始</button>
+            <button id="logoutBtn" class="btn-red">ログアウト</button>
+          </div>
+
+          <div class="small" style="margin-top:10px;">
+            URLパラメータ例: <br>
+            <code>?companyCode=abc123&vehicleId=truck01&vehicleName=1号車</code>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h2>現在の状態</h2>
+          <div id="currentInfo" class="status">未ログイン</div>
+
+          <div class="legend">
+            <span class="badge badge-blue">青 = 自車両</span>
+            <span class="badge badge-red">赤 = 地点</span>
+          </div>
+
+          <div id="gpsStatus" class="status">GPS未開始</div>
+        </div>
+
+        <div class="card panel">
+          <div class="row-between">
+            <h2>地点一覧</h2>
+            <span id="pointCount" class="badge">0件</span>
+          </div>
+          <div class="small">site / waiting を表示</div>
+          <div id="pointList" class="list"></div>
+        </div>
+      </div>
+
+      <div class="card map-card">
+        <div id="map"></div>
       </div>
     </div>
   </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      off,
+      set,
+      update,
+      remove,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUKBDIyzCxy-LawDU4zhmzyJBXgfS5pNI",
+      authDomain: "dispatch-d25b8.firebaseapp.com",
+      databaseURL: "https://dispatch-d25b8-default-rtdb.firebaseio.com",
+      projectId: "dispatch-d25b8",
+      storageBucket: "dispatch-d25b8.firebasestorage.app",
+      messagingSenderId: "762412395171",
+      appId: "1:762412395171:web:65e2ff185d396d94eb6d16"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const STORAGE_KEY = "dispatch_vehicle_session";
+
+    const companyCodeInput = document.getElementById("companyCodeInput");
+    const vehicleIdInput = document.getElementById("vehicleIdInput");
+    const vehicleNameInput = document.getElementById("vehicleNameInput");
+    const saveLoginBtn = document.getElementById("saveLoginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const currentInfo = document.getElementById("currentInfo");
+    const gpsStatus = document.getElementById("gpsStatus");
+
+    const pointCount = document.getElementById("pointCount");
+    const pointList = document.getElementById("pointList");
+
+    let map;
+    let myMarker = null;
+    let pointMarkers = {};
+    let pointsRef = null;
+    let pointsCache = {};
+    let watchId = null;
+
+    let session = {
+      companyCode: "",
+      vehicleId: "",
+      vehicleName: ""
+    };
+
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function normalizeNumber(value){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function makeCircleIcon(color){
+      return L.divIcon({
+        html: `
+          <div style="
+            width:18px;
+            height:18px;
+            border-radius:50%;
+            background:${color};
+            border:3px solid #fff;
+            box-shadow:0 0 0 1px rgba(0,0,0,.18);
+          "></div>
+        `,
+        className: "",
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+    }
+
+    function initMap(){
+      map = L.map("map").setView([36.0, 139.4], 10);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    function saveSession(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    }
+
+    function loadSession(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      }catch{
+        return null;
+      }
+    }
+
+    function clearSession(){
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    function getUrlParams(){
+      const params = new URLSearchParams(location.search);
+      return {
+        companyCode: (params.get("companyCode") || "").trim(),
+        vehicleId: (params.get("vehicleId") || "").trim(),
+        vehicleName: (params.get("vehicleName") || "").trim()
+      };
+    }
+
+    function applySessionToInputs(){
+      companyCodeInput.value = session.companyCode || "";
+      vehicleIdInput.value = session.vehicleId || "";
+      vehicleNameInput.value = session.vehicleName || "";
+    }
+
+    function renderCurrentInfo(){
+      if (!session.companyCode || !session.vehicleId){
+        currentInfo.innerHTML = "未ログイン";
+        return;
+      }
+
+      currentInfo.innerHTML = `
+        companyCode: <b>${escapeHtml(session.companyCode)}</b><br>
+        vehicleId: <b>${escapeHtml(session.vehicleId)}</b><br>
+        vehicleName: <b>${escapeHtml(session.vehicleName || session.vehicleId)}</b>
+      `;
+    }
+
+    function clearPointMarkers(){
+      Object.values(pointMarkers).forEach(marker => map.removeLayer(marker));
+      pointMarkers = {};
+    }
+
+    function flattenPoints(pointsRoot){
+      const result = [];
+
+      const siteObj = pointsRoot?.site || {};
+      const waitingObj = pointsRoot?.waiting || {};
+
+      Object.entries(siteObj).forEach(([pointId, data]) => {
+        result.push({
+          pointId,
+          type: "site",
+          ...data
+        });
+      });
+
+      Object.entries(waitingObj).forEach(([pointId, data]) => {
+        result.push({
+          pointId,
+          type: "waiting",
+          ...data
+        });
+      });
+
+      return result;
+    }
+
+    function renderPoints(){
+      clearPointMarkers();
+
+      const list = flattenPoints(pointsCache);
+      pointCount.textContent = `${list.length}件`;
+      pointList.innerHTML = "";
+
+      if (list.length === 0){
+        pointList.innerHTML = `<div class="item"><div class="item-sub">地点データがありません</div></div>`;
+        return;
+      }
+
+      list.forEach((point) => {
+        const lat = normalizeNumber(point?.lat ?? point?.latitude);
+        const lng = normalizeNumber(point?.lng ?? point?.longitude);
+        const name = point?.name || point.pointId;
+        const memo = point?.memo || "";
+        const type = point?.type || "";
+        const typeLabel = type === "waiting" ? "waiting" : "site";
+
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="item-title">${escapeHtml(name)}</div>
+          <div class="item-sub">type: ${escapeHtml(typeLabel)}</div>
+          <div class="item-sub">memo: ${escapeHtml(memo || "-")}</div>
+          <div class="item-sub">lat: ${lat ?? "-"}</div>
+          <div class="item-sub">lng: ${lng ?? "-"}</div>
+        `;
+        pointList.appendChild(div);
+
+        if (lat !== null && lng !== null){
+          const markerKey = `${type}_${point.pointId}`;
+          const marker = L.marker([lat, lng], {
+            icon: makeCircleIcon("#dc2626")
+          }).addTo(map);
+
+          marker.bindPopup(`
+            <div style="min-width:180px;">
+              <b>${escapeHtml(name)}</b><br>
+              type: ${escapeHtml(typeLabel)}<br>
+              memo: ${escapeHtml(memo || "-")}<br>
+              lat: ${lat}<br>
+              lng: ${lng}
+            </div>
+          `);
+
+          pointMarkers[markerKey] = marker;
+        }
+      });
+    }
+
+    function stopPointsListener(){
+      if (pointsRef) off(pointsRef);
+      pointsRef = null;
+      pointsCache = {};
+      clearPointMarkers();
+      pointList.innerHTML = "";
+      pointCount.textContent = "0件";
+    }
+
+    function startPointsListener(){
+      stopPointsListener();
+
+      if (!session.companyCode) return;
+
+      pointsRef = ref(db, `companies/${session.companyCode}/points`);
+      onValue(pointsRef, (snapshot) => {
+        pointsCache = snapshot.val() || {};
+        renderPoints();
+      });
+    }
+
+    async function writeVehiclePosition(lat, lng, accuracy = null){
+      if (!session.companyCode || !session.vehicleId) return;
+
+      const vehicleRef = ref(db, `companies/${session.companyCode}/vehicles/${session.vehicleId}`);
+
+      const payload = {
+        vehicleId: session.vehicleId,
+        name: session.vehicleName || session.vehicleId,
+        companyCode: session.companyCode,
+        lat,
+        lng,
+        accuracy: accuracy ?? null,
+        updatedAt: new Date().toISOString(),
+        updatedAtServer: serverTimestamp(),
+        online: true
+      };
+
+      await update(vehicleRef, payload);
+    }
+
+    function updateMyMarker(lat, lng){
+      if (!myMarker){
+        myMarker = L.marker([lat, lng], {
+          icon: makeCircleIcon("#2563eb")
+        }).addTo(map);
+      } else {
+        myMarker.setLatLng([lat, lng]);
+      }
+
+      myMarker.bindPopup(`
+        <div style="min-width:180px;">
+          <b>${escapeHtml(session.vehicleName || session.vehicleId || "自車両")}</b><br>
+          companyCode: ${escapeHtml(session.companyCode || "-")}<br>
+          vehicleId: ${escapeHtml(session.vehicleId || "-")}<br>
+          lat: ${lat}<br>
+          lng: ${lng}
+        </div>
+      `);
+    }
+
+    function stopGpsWatch(){
+      if (watchId !== null){
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+    }
+
+    function startGpsWatch(){
+      stopGpsWatch();
+
+      if (!navigator.geolocation){
+        gpsStatus.textContent = "この端末ではGPSが使えません";
+        return;
+      }
+
+      if (!session.companyCode || !session.vehicleId){
+        gpsStatus.textContent = "会社コードと車両IDを設定してください";
+        return;
+      }
+
+      gpsStatus.textContent = "GPS開始中...";
+
+      watchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy;
+
+          updateMyMarker(lat, lng);
+
+          try{
+            await writeVehiclePosition(lat, lng, accuracy);
+            gpsStatus.innerHTML = `
+              GPS送信中<br>
+              lat: ${lat}<br>
+              lng: ${lng}<br>
+              accuracy: ${accuracy ?? "-"}m<br>
+              更新: ${new Date().toLocaleString("ja-JP")}
+            `;
+          }catch(error){
+            console.error(error);
+            gpsStatus.textContent = "FirebaseへのGPS送信に失敗しました";
+          }
+        },
+        (error) => {
+          console.error(error);
+          gpsStatus.textContent = `GPS取得エラー: ${error.message}`;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 3000
+        }
+      );
+    }
+
+    async function markOfflineAndRemove(){
+      if (!session.companyCode || !session.vehicleId) return;
+
+      const vehicleRef = ref(db, `companies/${session.companyCode}/vehicles/${session.vehicleId}`);
+
+      try{
+        await update(vehicleRef, {
+          online: false,
+          loggedOutAt: new Date().toISOString()
+        });
+      }catch(error){
+        console.error(error);
+      }
+    }
+
+    async function loginAndStart(newSession){
+      session = {
+        companyCode: newSession.companyCode.trim(),
+        vehicleId: newSession.vehicleId.trim(),
+        vehicleName: newSession.vehicleName.trim()
+      };
+
+      if (!session.companyCode || !session.vehicleId){
+        alert("会社コードと車両IDは必須です");
+        return;
+      }
+
+      saveSession();
+      applySessionToInputs();
+      renderCurrentInfo();
+      startPointsListener();
+      startGpsWatch();
+    }
+
+    async function logout(){
+      stopGpsWatch();
+      stopPointsListener();
+      await markOfflineAndRemove();
+
+      session = {
+        companyCode: "",
+        vehicleId: "",
+        vehicleName: ""
+      };
+
+      clearSession();
+      applySessionToInputs();
+      renderCurrentInfo();
+      gpsStatus.textContent = "ログアウトしました";
+
+      if (myMarker){
+        map.removeLayer(myMarker);
+        myMarker = null;
+      }
+    }
+
+    function setupFromUrlOrStorage(){
+      const params = getUrlParams();
+      const saved = loadSession();
+
+      if (params.companyCode && params.vehicleId){
+        session = {
+          companyCode: params.companyCode,
+          vehicleId: params.vehicleId,
+          vehicleName: params.vehicleName || params.vehicleId
+        };
+        saveSession();
+      } else if (saved?.companyCode && saved?.vehicleId){
+        session = {
+          companyCode: saved.companyCode || "",
+          vehicleId: saved.vehicleId || "",
+          vehicleName: saved.vehicleName || saved.vehicleId || ""
+        };
+      }
+
+      applySessionToInputs();
+      renderCurrentInfo();
+
+      if (session.companyCode && session.vehicleId){
+        startPointsListener();
+        startGpsWatch();
+      }
+    }
+
+    saveLoginBtn.addEventListener("click", async () => {
+      await loginAndStart({
+        companyCode: companyCodeInput.value,
+        vehicleId: vehicleIdInput.value,
+        vehicleName: vehicleNameInput.value
+      });
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      const ok = confirm("ログアウトしますか？");
+      if (!ok) return;
+      await logout();
+    });
+
+    window.addEventListener("beforeunload", () => {
+      stopGpsWatch();
+    });
+
+    initMap();
+    setupFromUrlOrStorage();
+  </script>
 </body>
 </html>

@@ -52,14 +52,14 @@
     }
 
     .wrap{
-      max-width:1400px;
+      max-width:1500px;
       margin:0 auto;
       padding:16px;
     }
 
     .topbar{
       display:grid;
-      grid-template-columns: 1fr auto auto auto;
+      grid-template-columns: 1fr auto auto;
       gap:10px;
       margin-bottom:16px;
     }
@@ -70,13 +70,19 @@
       }
     }
 
-    input, select, button{
+    input, select, button, textarea{
       width:100%;
       padding:12px 14px;
       border-radius:12px;
       border:1px solid #d1d5db;
       font-size:14px;
       background:#fff;
+      font-family:inherit;
+    }
+
+    textarea{
+      min-height:90px;
+      resize:vertical;
     }
 
     button{
@@ -96,13 +102,19 @@
       border-color:#fecaca;
     }
 
+    .btn-green{
+      background:#fff;
+      color:#15803d;
+      border-color:#bbf7d0;
+    }
+
     .layout{
       display:grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 420px 1fr;
       gap:16px;
     }
 
-    @media (max-width: 980px){
+    @media (max-width: 1100px){
       .layout{
         grid-template-columns:1fr;
       }
@@ -134,7 +146,7 @@
       margin-top:10px;
       font-size:13px;
       color:#374151;
-      word-break:break-all;
+      word-break:break-word;
       line-height:1.6;
     }
 
@@ -223,7 +235,7 @@
 
     #map{
       width:100%;
-      height:74vh;
+      height:78vh;
       min-height:520px;
       border-radius:14px;
       overflow:hidden;
@@ -241,19 +253,86 @@
     .actions button{
       width:auto;
     }
+
+    .qr-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-top:10px;
+    }
+
+    @media (max-width: 900px){
+      .qr-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .qr-box{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+
+    .qr-title{
+      font-weight:700;
+      margin-bottom:8px;
+    }
+
+    .qr-canvas-wrap{
+      display:flex;
+      justify-content:center;
+      margin-top:10px;
+    }
+
+    canvas.qr{
+      max-width:100%;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      background:#fff;
+    }
+
+    .mono{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      font-size:12px;
+      color:#374151;
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:10px;
+      word-break:break-all;
+    }
+
+    .hidden{
+      display:none;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>dispatch 管理者画面</h1>
-    <div class="sub">生コン向け GPS 配車 / 地点管理</div>
+    <div class="sub">1社専用 / 車両管理 / 地点管理 / QR発行</div>
   </header>
 
   <div class="wrap">
+    <div id="setupCard" class="card panel hidden">
+      <h2>初回設定</h2>
+      <div class="small">この管理画面を自社専用に固定します</div>
+
+      <div class="assign-box">
+        <input id="setupCompanyCodeInput" placeholder="会社コード 例: abc123" />
+        <div class="space10"></div>
+        <button id="saveSetupBtn" class="btn-primary">この会社で固定する</button>
+        <div id="setupStatus" class="status">URLに companyCode が無い場合のみ、この設定を使います。</div>
+      </div>
+    </div>
+
     <div class="topbar">
-      <input id="companyCodeInput" placeholder="会社コードを入力" />
-      <button id="connectBtn" class="btn-primary">接続</button>
-      <button id="myLocationBtn">管理者位置を取得</button>
+      <div class="card panel" style="margin-bottom:0;">
+        <div class="small">管理対象会社</div>
+        <div id="currentCompanyCode" class="status">未設定</div>
+      </div>
+      <button id="myLocationBtn">管理者位置</button>
       <button id="reloadBtn">再読込</button>
     </div>
 
@@ -261,16 +340,75 @@
       <div>
         <div class="card panel">
           <h2>接続情報</h2>
-          <div class="small">現在の会社コード</div>
-          <div id="currentCompanyCode" class="status">未接続</div>
+          <div id="statusText" class="status">接続待機中</div>
 
           <div class="legend">
             <span class="badge badge-blue">青 = 車両</span>
             <span class="badge badge-red">赤 = 地点</span>
             <span class="badge badge-green">緑 = 管理者</span>
           </div>
+        </div>
 
-          <div id="statusText" class="status">会社コードを入力して接続してください。</div>
+        <div class="card panel">
+          <h2>会社設定</h2>
+          <div class="small">この会社専用の設定です</div>
+
+          <div class="assign-box">
+            <input id="companyNameInput" placeholder="会社名 例: ABC工場" />
+
+            <div class="space10"></div>
+
+            <textarea id="buddycomLoginUrlInput" placeholder="Buddycom のログインURL / かんたんログインURLを貼り付け"></textarea>
+
+            <div class="actions">
+              <button id="saveCompanySettingsBtn" class="btn-primary">会社設定を保存</button>
+            </div>
+
+            <div id="companySettingsStatus" class="status">会社設定はまだ保存されていません。</div>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h2>QR発行（2種類）</h2>
+          <div class="small">この会社専用のQRだけ発行します</div>
+
+          <div class="qr-grid">
+            <div class="qr-box">
+              <div class="qr-title">1. dispatch 会社QR</div>
+              <div class="small">companyCode だけを持つ会社QR</div>
+
+              <div class="actions">
+                <button id="generateDispatchQrBtn" class="btn-primary">dispatch QR生成</button>
+                <button id="downloadDispatchQrBtn">画像保存</button>
+                <button id="copyDispatchUrlBtn">URLコピー</button>
+              </div>
+
+              <div id="dispatchQrStatus" class="status">まだ生成していません。</div>
+              <div id="dispatchQrUrlView" class="mono">未生成</div>
+
+              <div class="qr-canvas-wrap">
+                <canvas id="dispatchQrCanvas" class="qr"></canvas>
+              </div>
+            </div>
+
+            <div class="qr-box">
+              <div class="qr-title">2. Buddycom QR</div>
+              <div class="small">会社設定に保存した Buddycom URL から生成</div>
+
+              <div class="actions">
+                <button id="generateBuddycomQrBtn" class="btn-primary">Buddycom QR生成</button>
+                <button id="downloadBuddycomQrBtn">画像保存</button>
+                <button id="copyBuddycomUrlBtn">URLコピー</button>
+              </div>
+
+              <div id="buddycomQrStatus" class="status">まだ生成していません。</div>
+              <div id="buddycomQrUrlView" class="mono">未生成</div>
+
+              <div class="qr-canvas-wrap">
+                <canvas id="buddycomQrCanvas" class="qr"></canvas>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card panel">
@@ -278,7 +416,7 @@
             <h2>車両一覧</h2>
             <span id="vehicleCount" class="badge">0台</span>
           </div>
-          <div class="small">vehicles をリアルタイム表示 / 残った応援車も削除可能</div>
+          <div class="small">この会社の vehicles をリアルタイム表示</div>
           <div id="vehicleList" class="list"></div>
         </div>
 
@@ -318,7 +456,7 @@
             <h2>地点一覧</h2>
             <span id="pointCount" class="badge">0件</span>
           </div>
-          <div class="small">points/site または points/waiting を表示</div>
+          <div class="small">この会社の points/site と points/waiting を表示</div>
           <div id="pointList" class="list"></div>
         </div>
       </div>
@@ -330,6 +468,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -352,6 +491,8 @@
       appId: "1:762412395171:web:65e2ff185d396d94eb6d16"
     };
 
+    const ADMIN_COMPANY_STORAGE_KEY = "dispatch_admin_company_code";
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -360,23 +501,52 @@
 
     let vehiclesRef = null;
     let pointsRef = null;
+    let settingsRef = null;
+
+    let vehiclesCache = {};
+    let pointsCache = {};
+    let settingsCache = {};
 
     let vehicleMarkers = {};
     let pointMarkers = {};
 
-    let vehiclesCache = {};
-    let pointsCache = {};
-
     let adminMarker = null;
     let tempPointMarker = null;
 
-    const companyCodeInput = document.getElementById("companyCodeInput");
-    const connectBtn = document.getElementById("connectBtn");
-    const myLocationBtn = document.getElementById("myLocationBtn");
-    const reloadBtn = document.getElementById("reloadBtn");
+    let dispatchQrInstance = null;
+    let buddycomQrInstance = null;
+    let lastDispatchQrUrl = "";
+    let lastBuddycomQrUrl = "";
+
+    const setupCard = document.getElementById("setupCard");
+    const setupCompanyCodeInput = document.getElementById("setupCompanyCodeInput");
+    const saveSetupBtn = document.getElementById("saveSetupBtn");
+    const setupStatus = document.getElementById("setupStatus");
 
     const currentCompanyCode = document.getElementById("currentCompanyCode");
     const statusText = document.getElementById("statusText");
+
+    const myLocationBtn = document.getElementById("myLocationBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    const companyNameInput = document.getElementById("companyNameInput");
+    const buddycomLoginUrlInput = document.getElementById("buddycomLoginUrlInput");
+    const saveCompanySettingsBtn = document.getElementById("saveCompanySettingsBtn");
+    const companySettingsStatus = document.getElementById("companySettingsStatus");
+
+    const generateDispatchQrBtn = document.getElementById("generateDispatchQrBtn");
+    const downloadDispatchQrBtn = document.getElementById("downloadDispatchQrBtn");
+    const copyDispatchUrlBtn = document.getElementById("copyDispatchUrlBtn");
+    const dispatchQrStatus = document.getElementById("dispatchQrStatus");
+    const dispatchQrUrlView = document.getElementById("dispatchQrUrlView");
+    const dispatchQrCanvas = document.getElementById("dispatchQrCanvas");
+
+    const generateBuddycomQrBtn = document.getElementById("generateBuddycomQrBtn");
+    const downloadBuddycomQrBtn = document.getElementById("downloadBuddycomQrBtn");
+    const copyBuddycomUrlBtn = document.getElementById("copyBuddycomUrlBtn");
+    const buddycomQrStatus = document.getElementById("buddycomQrStatus");
+    const buddycomQrUrlView = document.getElementById("buddycomQrUrlView");
+    const buddycomQrCanvas = document.getElementById("buddycomQrCanvas");
 
     const vehicleCount = document.getElementById("vehicleCount");
     const vehicleList = document.getElementById("vehicleList");
@@ -391,6 +561,20 @@
 
     const pointCount = document.getElementById("pointCount");
     const pointList = document.getElementById("pointList");
+
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function normalizeNumber(value){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
 
     function makeCircleIcon(color){
       return L.divIcon({
@@ -408,20 +592,6 @@
         iconSize: [18, 18],
         iconAnchor: [9, 9]
       });
-    }
-
-    function escapeHtml(value){
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
-    function normalizeNumber(value){
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
     }
 
     function initMap(){
@@ -449,6 +619,42 @@
 
         tempPointMarker.bindPopup("新規地点候補").openPopup();
       });
+    }
+
+    function getCompanyCodeFromUrl(){
+      const params = new URLSearchParams(location.search);
+      return (params.get("companyCode") || "").trim();
+    }
+
+    function getSavedCompanyCode(){
+      return (localStorage.getItem(ADMIN_COMPANY_STORAGE_KEY) || "").trim();
+    }
+
+    function saveCompanyCodeToStorage(code){
+      localStorage.setItem(ADMIN_COMPANY_STORAGE_KEY, code);
+    }
+
+    function resolveAdminCompanyCode(){
+      const fromUrl = getCompanyCodeFromUrl();
+      if (fromUrl) {
+        saveCompanyCodeToStorage(fromUrl);
+        return fromUrl;
+      }
+
+      const fromStorage = getSavedCompanyCode();
+      if (fromStorage) return fromStorage;
+
+      return "";
+    }
+
+    function showSetupMode(){
+      setupCard.classList.remove("hidden");
+      currentCompanyCode.textContent = "未設定";
+      statusText.textContent = "まず会社コードを1回だけ設定してください。";
+    }
+
+    function hideSetupMode(){
+      setupCard.classList.add("hidden");
     }
 
     function clearVehicleMarkers(){
@@ -616,9 +822,23 @@
       });
     }
 
+    function renderCurrentCompanySettings(){
+      const companyName = settingsCache?.companyName || "";
+      const buddycomLoginUrl = settingsCache?.buddycomLoginUrl || "";
+
+      companyNameInput.value = companyName;
+      buddycomLoginUrlInput.value = buddycomLoginUrl;
+
+      companySettingsStatus.innerHTML = `
+        companyCode: ${escapeHtml(companyCode || "-")}<br>
+        companyName: ${escapeHtml(companyName || "-")}<br>
+        Buddycom URL: ${buddycomLoginUrl ? "設定あり" : "未設定"}
+      `;
+    }
+
     async function deleteVehicle(vehicleId){
       if (!companyCode) {
-        alert("先に会社コードへ接続してください");
+        alert("会社コード未設定です");
         return;
       }
 
@@ -637,7 +857,7 @@
 
     async function deletePoint(type, pointId){
       if (!companyCode) {
-        alert("先に会社コードへ接続してください");
+        alert("会社コード未設定です");
         return;
       }
 
@@ -667,7 +887,7 @@
 
     async function savePoint(){
       if (!companyCode){
-        alert("先に会社コードへ接続してください");
+        alert("会社コード未設定です");
         return;
       }
 
@@ -720,14 +940,127 @@
       }
     }
 
+    async function saveCompanySettings(){
+      if (!companyCode){
+        alert("会社コード未設定です");
+        return;
+      }
+
+      const payload = {
+        companyName: (companyNameInput.value || "").trim(),
+        buddycomLoginUrl: (buddycomLoginUrlInput.value || "").trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        const targetRef = ref(db, `companies/${companyCode}/settings`);
+        await set(targetRef, payload);
+        settingsCache = payload;
+        renderCurrentCompanySettings();
+        statusText.textContent = `会社設定を保存しました: ${companyCode}`;
+      } catch (error) {
+        console.error(error);
+        alert("会社設定の保存に失敗しました");
+      }
+    }
+
+    function buildDispatchCompanyQrUrl(){
+      if (!companyCode){
+        alert("会社コード未設定です");
+        return "";
+      }
+
+      const url = new URL("https://bpakishizawa-sketch.github.io/dispatch/");
+      url.searchParams.set("companyCode", companyCode);
+      return url.toString();
+    }
+
+    function generateDispatchQr(){
+      const url = buildDispatchCompanyQrUrl();
+      if (!url) return;
+
+      lastDispatchQrUrl = url;
+
+      if (!dispatchQrInstance){
+        dispatchQrInstance = new QRious({
+          element: dispatchQrCanvas,
+          value: url,
+          size: 280,
+          level: "H"
+        });
+      } else {
+        dispatchQrInstance.value = url;
+      }
+
+      dispatchQrStatus.innerHTML = `
+        dispatch QR生成済み<br>
+        companyCode: ${escapeHtml(companyCode)}
+      `;
+      dispatchQrUrlView.textContent = url;
+    }
+
+    function generateBuddycomQr(){
+      const url = (buddycomLoginUrlInput.value || "").trim();
+
+      if (!url){
+        alert("Buddycom URLを入力または保存してください");
+        return;
+      }
+
+      lastBuddycomQrUrl = url;
+
+      if (!buddycomQrInstance){
+        buddycomQrInstance = new QRious({
+          element: buddycomQrCanvas,
+          value: url,
+          size: 280,
+          level: "H"
+        });
+      } else {
+        buddycomQrInstance.value = url;
+      }
+
+      buddycomQrStatus.innerHTML = `
+        Buddycom QR生成済み<br>
+        companyCode: ${escapeHtml(companyCode)}
+      `;
+      buddycomQrUrlView.textContent = url;
+    }
+
+    function downloadCanvasAsPng(canvas, filename){
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = filename;
+      link.click();
+    }
+
+    async function copyTextToClipboard(text, successMessage){
+      if (!text){
+        alert("先に生成してください");
+        return;
+      }
+
+      try{
+        await navigator.clipboard.writeText(text);
+        statusText.textContent = successMessage;
+      }catch(error){
+        console.error(error);
+        alert("コピーに失敗しました");
+      }
+    }
+
     function stopListeners(){
       if (vehiclesRef) off(vehiclesRef);
       if (pointsRef) off(pointsRef);
+      if (settingsRef) off(settingsRef);
 
       vehiclesRef = null;
       pointsRef = null;
+      settingsRef = null;
+
       vehiclesCache = {};
       pointsCache = {};
+      settingsCache = {};
 
       clearVehicleMarkers();
       clearPointMarkers();
@@ -739,20 +1072,22 @@
     }
 
     function connectCompany(){
-      const code = companyCodeInput.value.trim();
-      if (!code){
-        alert("会社コードを入力してください");
+      if (!companyCode){
+        showSetupMode();
         return;
       }
 
+      hideSetupMode();
       stopListeners();
 
-      companyCode = code;
-      currentCompanyCode.textContent = companyCode;
+      currentCompanyCode.innerHTML = `
+        companyCode: <b>${escapeHtml(companyCode)}</b>
+      `;
       statusText.textContent = `接続中: companies/${companyCode}`;
 
       vehiclesRef = ref(db, `companies/${companyCode}/vehicles`);
       pointsRef = ref(db, `companies/${companyCode}/points`);
+      settingsRef = ref(db, `companies/${companyCode}/settings`);
 
       onValue(vehiclesRef, (snapshot) => {
         vehiclesCache = snapshot.val() || {};
@@ -762,6 +1097,11 @@
       onValue(pointsRef, (snapshot) => {
         pointsCache = snapshot.val() || {};
         renderPoints();
+      });
+
+      onValue(settingsRef, (snapshot) => {
+        settingsCache = snapshot.val() || {};
+        renderCurrentCompanySettings();
       });
     }
 
@@ -799,12 +1139,51 @@
       );
     }
 
-    connectBtn.addEventListener("click", connectCompany);
-    reloadBtn.addEventListener("click", () => location.reload());
+    saveSetupBtn.addEventListener("click", () => {
+      const code = (setupCompanyCodeInput.value || "").trim();
+      if (!code){
+        alert("会社コードを入力してください");
+        return;
+      }
+
+      companyCode = code;
+      saveCompanyCodeToStorage(code);
+      setupStatus.textContent = `保存しました: ${code}`;
+      connectCompany();
+    });
+
     myLocationBtn.addEventListener("click", setAdminLocation);
+    reloadBtn.addEventListener("click", () => location.reload());
     savePointBtn.addEventListener("click", savePoint);
+    saveCompanySettingsBtn.addEventListener("click", saveCompanySettings);
+
+    generateDispatchQrBtn.addEventListener("click", generateDispatchQr);
+    downloadDispatchQrBtn.addEventListener("click", () => {
+      if (!lastDispatchQrUrl){
+        alert("先にdispatch QRを生成してください");
+        return;
+      }
+      downloadCanvasAsPng(dispatchQrCanvas, `dispatch_company_qr_${companyCode}.png`);
+    });
+    copyDispatchUrlBtn.addEventListener("click", async () => {
+      await copyTextToClipboard(lastDispatchQrUrl, "dispatch URLをコピーしました");
+    });
+
+    generateBuddycomQrBtn.addEventListener("click", generateBuddycomQr);
+    downloadBuddycomQrBtn.addEventListener("click", () => {
+      if (!lastBuddycomQrUrl){
+        alert("先にBuddycom QRを生成してください");
+        return;
+      }
+      downloadCanvasAsPng(buddycomQrCanvas, `buddycom_qr_${companyCode}.png`);
+    });
+    copyBuddycomUrlBtn.addEventListener("click", async () => {
+      await copyTextToClipboard(lastBuddycomQrUrl, "Buddycom URLをコピーしました");
+    });
 
     initMap();
+    companyCode = resolveAdminCompanyCode();
+    connectCompany();
   </script>
 </body>
 </html>

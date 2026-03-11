@@ -19,7 +19,10 @@
       --text:#111827;
       --sub:#6b7280;
       --blue:#2563eb;
+      --blue-dark:#1e40af;
       --red:#dc2626;
+      --yellow:#facc15;
+      --purple:#7c3aed;
       --green:#16a34a;
       --shadow:0 8px 24px rgba(0,0,0,.08);
       --radius:16px;
@@ -102,12 +105,6 @@
       border-color:#fecaca;
     }
 
-    .btn-green{
-      background:#fff;
-      color:#15803d;
-      border-color:#bbf7d0;
-    }
-
     .layout{
       display:grid;
       grid-template-columns: 420px 1fr;
@@ -175,6 +172,22 @@
     .badge-red{
       background:#fee2e2;
       color:#b91c1c;
+    }
+
+    .badge-yellow{
+      background:#fef9c3;
+      color:#92400e;
+    }
+
+    .badge-purple{
+      background:#ede9fe;
+      color:#6d28d9;
+    }
+
+    .badge-white{
+      background:#fff;
+      color:#111827;
+      border:1px solid #d1d5db;
     }
 
     .badge-green{
@@ -343,9 +356,13 @@
           <div id="statusText" class="status">接続待機中</div>
 
           <div class="legend">
-            <span class="badge badge-blue">青 = 車両</span>
-            <span class="badge badge-red">赤 = 地点</span>
-            <span class="badge badge-green">緑 = 管理者</span>
+            <span class="badge badge-blue">通常車両</span>
+            <span class="badge badge-blue" style="background:#dbeafe;color:#1e3a8a;">荷下ろし完了</span>
+            <span class="badge badge-white">残水・残コン処理完了</span>
+            <span class="badge badge-red">現場</span>
+            <span class="badge badge-yellow">待機場所</span>
+            <span class="badge badge-purple">工場</span>
+            <span class="badge badge-green">管理者</span>
           </div>
         </div>
 
@@ -422,7 +439,7 @@
 
         <div class="card panel">
           <h2>地点追加</h2>
-          <div class="small">地図クリックで緯度経度を取得し、points に保存します</div>
+          <div class="small">現場 / 待機場所 / 工場 を登録できます</div>
 
           <div class="assign-box">
             <div class="grid2">
@@ -430,6 +447,7 @@
               <select id="pointTypeSelect">
                 <option value="site">site（現場）</option>
                 <option value="waiting">waiting（待機場所）</option>
+                <option value="factory">factory（工場）</option>
               </select>
             </div>
 
@@ -456,7 +474,7 @@
             <h2>地点一覧</h2>
             <span id="pointCount" class="badge">0件</span>
           </div>
-          <div class="small">この会社の points/site と points/waiting を表示</div>
+          <div class="small">この会社の points を表示</div>
           <div id="pointList" class="list"></div>
         </div>
       </div>
@@ -576,22 +594,42 @@
       return Number.isFinite(n) ? n : null;
     }
 
-    function makeCircleIcon(color){
+    function makeCircleIcon(fillColor, borderColor = "#ffffff"){
       return L.divIcon({
         html: `
           <div style="
-            width:18px;
-            height:18px;
+            width:22px;
+            height:22px;
             border-radius:50%;
-            background:${color};
-            border:3px solid #fff;
-            box-shadow:0 0 0 1px rgba(0,0,0,.18);
+            background:${fillColor};
+            border:4px solid ${borderColor};
+            box-shadow:0 0 0 2px rgba(17,24,39,.35);
           "></div>
         `,
         className: "",
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
       });
+    }
+
+    function pointTypeStyle(type){
+      if (type === "waiting"){
+        return { color: "#facc15", label: "待機場所" };
+      }
+      if (type === "factory"){
+        return { color: "#7c3aed", label: "工場" };
+      }
+      return { color: "#dc2626", label: "現場" };
+    }
+
+    function vehicleStatusStyle(status){
+      if (status === "ready_for_next_load"){
+        return { color: "#ffffff", border: "#111827", label: "残水・残コン処理完了" };
+      }
+      if (status === "unloading_completed"){
+        return { color: "#2563eb", border: "#ffffff", label: "荷下ろし完了" };
+      }
+      return { color: "#1e40af", border: "#ffffff", label: "通常" };
     }
 
     function initMap(){
@@ -613,8 +651,11 @@
           map.removeLayer(tempPointMarker);
         }
 
+        const type = pointTypeSelect.value;
+        const style = pointTypeStyle(type);
+
         tempPointMarker = L.marker([lat, lng], {
-          icon: makeCircleIcon("#dc2626")
+          icon: makeCircleIcon(style.color, "#ffffff")
         }).addTo(map);
 
         tempPointMarker.bindPopup("新規地点候補").openPopup();
@@ -640,11 +681,7 @@
         saveCompanyCodeToStorage(fromUrl);
         return fromUrl;
       }
-
-      const fromStorage = getSavedCompanyCode();
-      if (fromStorage) return fromStorage;
-
-      return "";
+      return getSavedCompanyCode();
     }
 
     function showSetupMode(){
@@ -683,16 +720,16 @@
         const lat = normalizeNumber(data?.lat ?? data?.latitude);
         const lng = normalizeNumber(data?.lng ?? data?.longitude);
         const updatedAt = data?.updatedAt || "";
-        const name = data?.name || vehicleId;
-        const online = data?.online;
-        const onlineLabel = online === false ? "offline" : "online";
+        const name = data?.name || "";
+        const status = data?.status || "normal";
+        const style = vehicleStatusStyle(status);
 
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
-          <div class="item-title">${escapeHtml(name)}</div>
-          <div class="item-sub">vehicleId: ${escapeHtml(vehicleId)}</div>
-          <div class="item-sub">status: ${escapeHtml(onlineLabel)}</div>
+          <div class="item-title">${escapeHtml(vehicleId)}</div>
+          <div class="item-sub">名前: ${escapeHtml(name || "-")}</div>
+          <div class="item-sub">状態: ${escapeHtml(style.label)}</div>
           <div class="item-sub">lat: ${lat ?? "-"}</div>
           <div class="item-sub">lng: ${lng ?? "-"}</div>
           <div class="item-sub">updatedAt: ${escapeHtml(updatedAt)}</div>
@@ -704,14 +741,14 @@
 
         if (lat !== null && lng !== null){
           const marker = L.marker([lat, lng], {
-            icon: makeCircleIcon("#2563eb")
+            icon: makeCircleIcon(style.color, style.border)
           }).addTo(map);
 
           marker.bindPopup(`
             <div style="min-width:180px;">
-              <b>${escapeHtml(name)}</b><br>
-              vehicleId: ${escapeHtml(vehicleId)}<br>
-              status: ${escapeHtml(onlineLabel)}<br>
+              <b>${escapeHtml(vehicleId)}</b><br>
+              名前: ${escapeHtml(name || "-")}<br>
+              状態: ${escapeHtml(style.label)}<br>
               lat: ${lat}<br>
               lng: ${lng}
             </div>
@@ -731,24 +768,20 @@
 
     function flattenPoints(pointsRoot){
       const result = [];
-
       const siteObj = pointsRoot?.site || {};
       const waitingObj = pointsRoot?.waiting || {};
+      const factoryObj = pointsRoot?.factory || {};
 
       Object.entries(siteObj).forEach(([pointId, data]) => {
-        result.push({
-          pointId,
-          type: "site",
-          ...data
-        });
+        result.push({ pointId, type: "site", ...data });
       });
 
       Object.entries(waitingObj).forEach(([pointId, data]) => {
-        result.push({
-          pointId,
-          type: "waiting",
-          ...data
-        });
+        result.push({ pointId, type: "waiting", ...data });
+      });
+
+      Object.entries(factoryObj).forEach(([pointId, data]) => {
+        result.push({ pointId, type: "factory", ...data });
       });
 
       return result;
@@ -771,17 +804,15 @@
         const lng = normalizeNumber(point?.lng ?? point?.longitude);
         const name = point?.name || point.pointId;
         const memo = point?.memo || "";
-        const type = point?.type || "";
+        const type = point?.type || "site";
         const createdAt = point?.createdAt || "";
-
-        const typeLabel = type === "waiting" ? "waiting" : "site";
+        const style = pointTypeStyle(type);
 
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
           <div class="item-title">${escapeHtml(name)}</div>
-          <div class="item-sub">type: ${escapeHtml(typeLabel)}</div>
-          <div class="item-sub">pointId: ${escapeHtml(point.pointId)}</div>
+          <div class="item-sub">種別: ${escapeHtml(style.label)}</div>
           <div class="item-sub">memo: ${escapeHtml(memo || "-")}</div>
           <div class="item-sub">lat: ${lat ?? "-"}</div>
           <div class="item-sub">lng: ${lng ?? "-"}</div>
@@ -795,14 +826,13 @@
         if (lat !== null && lng !== null){
           const markerKey = `${type}_${point.pointId}`;
           const marker = L.marker([lat, lng], {
-            icon: makeCircleIcon("#dc2626")
+            icon: makeCircleIcon(style.color, "#ffffff")
           }).addTo(map);
 
           marker.bindPopup(`
             <div style="min-width:180px;">
               <b>${escapeHtml(name)}</b><br>
-              type: ${escapeHtml(typeLabel)}<br>
-              pointId: ${escapeHtml(point.pointId)}<br>
+              種別: ${escapeHtml(style.label)}<br>
               memo: ${escapeHtml(memo || "-")}<br>
               lat: ${lat}<br>
               lng: ${lng}
@@ -1121,7 +1151,7 @@
           }
 
           adminMarker = L.marker([lat, lng], {
-            icon: makeCircleIcon("#16a34a")
+            icon: makeCircleIcon("#16a34a", "#ffffff")
           }).addTo(map);
 
           adminMarker.bindPopup("管理者").openPopup();

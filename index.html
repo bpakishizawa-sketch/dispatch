@@ -19,7 +19,10 @@
       --text:#111827;
       --sub:#6b7280;
       --blue:#2563eb;
+      --blue-dark:#1d4ed8;
       --red:#dc2626;
+      --yellow:#facc15;
+      --purple:#7c3aed;
       --green:#16a34a;
       --shadow:0 8px 24px rgba(0,0,0,.08);
       --radius:16px;
@@ -52,14 +55,14 @@
     }
 
     .wrap{
-      max-width:1400px;
+      max-width:1450px;
       margin:0 auto;
       padding:16px;
     }
 
     .layout{
       display:grid;
-      grid-template-columns:380px 1fr;
+      grid-template-columns:400px 1fr;
       gap:16px;
     }
 
@@ -118,6 +121,18 @@
       border-color:#bbf7d0;
     }
 
+    .btn-blue{
+      background:#eff6ff;
+      color:#1d4ed8;
+      border-color:#bfdbfe;
+    }
+
+    .btn-white{
+      background:#fff;
+      color:#111827;
+      border-color:#d1d5db;
+    }
+
     .top-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -135,6 +150,18 @@
       color:#374151;
       word-break:break-word;
       line-height:1.6;
+    }
+
+    .warning{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #fecaca;
+      background:#fef2f2;
+      color:#991b1b;
+      font-size:13px;
+      line-height:1.6;
+      font-weight:700;
     }
 
     .legend{
@@ -164,9 +191,20 @@
       color:#b91c1c;
     }
 
-    .badge-green{
-      background:#dcfce7;
-      color:#15803d;
+    .badge-yellow{
+      background:#fef9c3;
+      color:#92400e;
+    }
+
+    .badge-purple{
+      background:#ede9fe;
+      color:#6d28d9;
+    }
+
+    .badge-white{
+      background:#fff;
+      color:#111827;
+      border:1px solid #d1d5db;
     }
 
     .row-between{
@@ -227,50 +265,99 @@
     }
 
     .space10{ height:10px; }
+
+    .status-box{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+    }
+
+    .status-label{
+      font-size:12px;
+      color:#64748b;
+      margin-bottom:4px;
+    }
+
+    .status-value{
+      font-weight:700;
+      font-size:14px;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>dispatch 車載画面</h1>
-    <div class="sub">GPS送信 / 地点表示 / 会社切替</div>
+    <div class="sub">GPS送信 / 地点表示 / ナビ開始 / 状態送信</div>
   </header>
 
   <div class="wrap">
     <div class="layout">
       <div>
         <div class="card panel">
-          <h2>ログイン / 切替</h2>
+          <h2>開始設定</h2>
 
-          <div class="top-grid">
-            <input id="companyCodeInput" placeholder="会社コード" />
-            <input id="vehicleIdInput" placeholder="車両ID 例: truck01" />
-          </div>
+          <div class="small">会社QRで会社は自動設定されます</div>
+          <div id="companyNameView" class="status">会社未設定</div>
 
           <div class="space10"></div>
 
-          <input id="vehicleNameInput" placeholder="表示名 例: 1号車" />
+          <div class="top-grid">
+            <input id="vehicleIdInput" placeholder="車番 例: 1号車 / truck01" />
+            <input id="driverNameInput" placeholder="名前 例: 岸澤" />
+          </div>
 
           <div class="actions">
             <button id="saveLoginBtn" class="btn-primary">保存して開始</button>
             <button id="logoutBtn" class="btn-red">ログアウト</button>
           </div>
 
-          <div class="small" style="margin-top:10px;">
-            URLパラメータ例: <br>
-            <code>?companyCode=abc123&vehicleId=truck01&vehicleName=1号車</code>
+          <div class="warning">
+            運転中の画面操作は禁止です。操作は必ず安全な場所に停車してから行ってください。
           </div>
         </div>
 
         <div class="card panel">
           <h2>現在の状態</h2>
-          <div id="currentInfo" class="status">未ログイン</div>
 
-          <div class="legend">
-            <span class="badge badge-blue">青 = 自車両</span>
-            <span class="badge badge-red">赤 = 地点</span>
+          <div class="status-box">
+            <div class="status-label">会社</div>
+            <div id="currentCompanyName" class="status-value">未設定</div>
           </div>
 
-          <div id="gpsStatus" class="status">GPS未開始</div>
+          <div class="status-box">
+            <div class="status-label">車番</div>
+            <div id="currentVehicleId" class="status-value">未設定</div>
+          </div>
+
+          <div class="status-box">
+            <div class="status-label">GPS送信状態</div>
+            <div id="gpsStatus" class="status-value">GPS未開始</div>
+          </div>
+
+          <div class="status-box">
+            <div class="status-label">車両ステータス</div>
+            <div id="vehicleStatusText" class="status-value">通常</div>
+          </div>
+
+          <div class="legend">
+            <span class="badge badge-red">現場</span>
+            <span class="badge badge-yellow">待機場所</span>
+            <span class="badge badge-purple">工場</span>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <h2>作業状態</h2>
+          <div class="small">管理画面ではこの状態で車両ピン色が変わります</div>
+
+          <div class="actions">
+            <button id="unloadingDoneBtn" class="btn-blue">荷下ろし完了</button>
+            <button id="washDoneBtn" class="btn-white">残水・残コン処理完了</button>
+          </div>
+
+          <div id="statusActionResult" class="status">まだ操作していません。</div>
         </div>
 
         <div class="card panel">
@@ -278,7 +365,7 @@
             <h2>地点一覧</h2>
             <span id="pointCount" class="badge">0件</span>
           </div>
-          <div class="small">site / waiting を表示</div>
+          <div class="small">地点をタップするとナビを開始できます</div>
           <div id="pointList" class="list"></div>
         </div>
       </div>
@@ -316,16 +403,22 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const STORAGE_KEY = "dispatch_vehicle_session";
+    const STORAGE_KEY = "dispatch_vehicle_session_v2";
 
-    const companyCodeInput = document.getElementById("companyCodeInput");
     const vehicleIdInput = document.getElementById("vehicleIdInput");
-    const vehicleNameInput = document.getElementById("vehicleNameInput");
+    const driverNameInput = document.getElementById("driverNameInput");
     const saveLoginBtn = document.getElementById("saveLoginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    const currentInfo = document.getElementById("currentInfo");
+    const companyNameView = document.getElementById("companyNameView");
+    const currentCompanyName = document.getElementById("currentCompanyName");
+    const currentVehicleId = document.getElementById("currentVehicleId");
     const gpsStatus = document.getElementById("gpsStatus");
+    const vehicleStatusText = document.getElementById("vehicleStatusText");
+
+    const unloadingDoneBtn = document.getElementById("unloadingDoneBtn");
+    const washDoneBtn = document.getElementById("washDoneBtn");
+    const statusActionResult = document.getElementById("statusActionResult");
 
     const pointCount = document.getElementById("pointCount");
     const pointList = document.getElementById("pointList");
@@ -334,13 +427,17 @@
     let myMarker = null;
     let pointMarkers = {};
     let pointsRef = null;
+    let settingsRef = null;
     let pointsCache = {};
+    let settingsCache = {};
     let watchId = null;
 
     let session = {
       companyCode: "",
       vehicleId: "",
-      vehicleName: ""
+      driverName: "",
+      status: "normal",
+      statusLabel: "通常"
     };
 
     function escapeHtml(value){
@@ -357,26 +454,41 @@
       return Number.isFinite(n) ? n : null;
     }
 
-    function makeCircleIcon(color){
+    function getUrlCompanyCode(){
+      const params = new URLSearchParams(location.search);
+      return (params.get("companyCode") || "").trim();
+    }
+
+    function makeCircleIcon(fillColor, borderColor = "#ffffff"){
       return L.divIcon({
         html: `
           <div style="
-            width:18px;
-            height:18px;
+            width:20px;
+            height:20px;
             border-radius:50%;
-            background:${color};
-            border:3px solid #fff;
-            box-shadow:0 0 0 1px rgba(0,0,0,.18);
+            background:${fillColor};
+            border:4px solid ${borderColor};
+            box-shadow:0 0 0 2px rgba(17,24,39,.35);
           "></div>
         `,
         className: "",
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
       });
     }
 
+    function pointTypeStyle(type){
+      if (type === "waiting"){
+        return { color: "#facc15", label: "待機場所" };
+      }
+      if (type === "factory"){
+        return { color: "#7c3aed", label: "工場" };
+      }
+      return { color: "#dc2626", label: "現場" };
+    }
+
     function initMap(){
-      map = L.map("map").setView([36.0, 139.4], 10);
+      map = L.map("map").setView([36.0, 139.4], 11);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -402,32 +514,17 @@
       localStorage.removeItem(STORAGE_KEY);
     }
 
-    function getUrlParams(){
-      const params = new URLSearchParams(location.search);
-      return {
-        companyCode: (params.get("companyCode") || "").trim(),
-        vehicleId: (params.get("vehicleId") || "").trim(),
-        vehicleName: (params.get("vehicleName") || "").trim()
-      };
-    }
-
     function applySessionToInputs(){
-      companyCodeInput.value = session.companyCode || "";
       vehicleIdInput.value = session.vehicleId || "";
-      vehicleNameInput.value = session.vehicleName || "";
+      driverNameInput.value = session.driverName || "";
     }
 
-    function renderCurrentInfo(){
-      if (!session.companyCode || !session.vehicleId){
-        currentInfo.innerHTML = "未ログイン";
-        return;
-      }
-
-      currentInfo.innerHTML = `
-        companyCode: <b>${escapeHtml(session.companyCode)}</b><br>
-        vehicleId: <b>${escapeHtml(session.vehicleId)}</b><br>
-        vehicleName: <b>${escapeHtml(session.vehicleName || session.vehicleId)}</b>
-      `;
+    function renderCompanyInfo(){
+      const companyName = settingsCache.companyName || "会社未設定";
+      companyNameView.textContent = companyName;
+      currentCompanyName.textContent = companyName;
+      currentVehicleId.textContent = session.vehicleId || "未設定";
+      vehicleStatusText.textContent = session.statusLabel || "通常";
     }
 
     function clearPointMarkers(){
@@ -437,27 +534,31 @@
 
     function flattenPoints(pointsRoot){
       const result = [];
-
       const siteObj = pointsRoot?.site || {};
       const waitingObj = pointsRoot?.waiting || {};
+      const factoryObj = pointsRoot?.factory || {};
 
       Object.entries(siteObj).forEach(([pointId, data]) => {
-        result.push({
-          pointId,
-          type: "site",
-          ...data
-        });
+        result.push({ pointId, type: "site", ...data });
       });
 
       Object.entries(waitingObj).forEach(([pointId, data]) => {
-        result.push({
-          pointId,
-          type: "waiting",
-          ...data
-        });
+        result.push({ pointId, type: "waiting", ...data });
+      });
+
+      Object.entries(factoryObj).forEach(([pointId, data]) => {
+        result.push({ pointId, type: "factory", ...data });
       });
 
       return result;
+    }
+
+    function openNavigation(lat, lng, label){
+      const ok = confirm(`${label} へ案内開始しますか？`);
+      if (!ok) return;
+
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+      window.open(url, "_blank");
     }
 
     function renderPoints(){
@@ -477,31 +578,41 @@
         const lng = normalizeNumber(point?.lng ?? point?.longitude);
         const name = point?.name || point.pointId;
         const memo = point?.memo || "";
-        const type = point?.type || "";
-        const typeLabel = type === "waiting" ? "waiting" : "site";
+        const type = point?.type || "site";
+        const style = pointTypeStyle(type);
 
         const div = document.createElement("div");
         div.className = "item";
         div.innerHTML = `
           <div class="item-title">${escapeHtml(name)}</div>
-          <div class="item-sub">type: ${escapeHtml(typeLabel)}</div>
-          <div class="item-sub">memo: ${escapeHtml(memo || "-")}</div>
+          <div class="item-sub">種別: ${escapeHtml(style.label)}</div>
+          <div class="item-sub">メモ: ${escapeHtml(memo || "-")}</div>
           <div class="item-sub">lat: ${lat ?? "-"}</div>
           <div class="item-sub">lng: ${lng ?? "-"}</div>
+          <div class="actions">
+            <button class="point-nav-btn btn-green">ナビ開始</button>
+          </div>
         `;
         pointList.appendChild(div);
+
+        const button = div.querySelector(".point-nav-btn");
+        if (button && lat !== null && lng !== null){
+          button.addEventListener("click", () => openNavigation(lat, lng, name));
+        }
 
         if (lat !== null && lng !== null){
           const markerKey = `${type}_${point.pointId}`;
           const marker = L.marker([lat, lng], {
-            icon: makeCircleIcon("#dc2626")
+            icon: makeCircleIcon(style.color, "#ffffff")
           }).addTo(map);
+
+          marker.on("click", () => openNavigation(lat, lng, name));
 
           marker.bindPopup(`
             <div style="min-width:180px;">
               <b>${escapeHtml(name)}</b><br>
-              type: ${escapeHtml(typeLabel)}<br>
-              memo: ${escapeHtml(memo || "-")}<br>
+              種別: ${escapeHtml(style.label)}<br>
+              メモ: ${escapeHtml(memo || "-")}<br>
               lat: ${lat}<br>
               lng: ${lng}
             </div>
@@ -514,22 +625,32 @@
 
     function stopPointsListener(){
       if (pointsRef) off(pointsRef);
+      if (settingsRef) off(settingsRef);
       pointsRef = null;
+      settingsRef = null;
       pointsCache = {};
+      settingsCache = {};
       clearPointMarkers();
       pointList.innerHTML = "";
       pointCount.textContent = "0件";
     }
 
-    function startPointsListener(){
+    function startCompanyListeners(){
       stopPointsListener();
 
       if (!session.companyCode) return;
 
       pointsRef = ref(db, `companies/${session.companyCode}/points`);
+      settingsRef = ref(db, `companies/${session.companyCode}/settings`);
+
       onValue(pointsRef, (snapshot) => {
         pointsCache = snapshot.val() || {};
         renderPoints();
+      });
+
+      onValue(settingsRef, (snapshot) => {
+        settingsCache = snapshot.val() || {};
+        renderCompanyInfo();
       });
     }
 
@@ -540,14 +661,16 @@
 
       const payload = {
         vehicleId: session.vehicleId,
-        name: session.vehicleName || session.vehicleId,
+        name: session.driverName || "",
         companyCode: session.companyCode,
         lat,
         lng,
         accuracy: accuracy ?? null,
         updatedAt: new Date().toISOString(),
         updatedAtServer: serverTimestamp(),
-        online: true
+        online: true,
+        status: session.status || "normal",
+        statusLabel: session.statusLabel || "通常"
       };
 
       await update(vehicleRef, payload);
@@ -556,7 +679,7 @@
     function updateMyMarker(lat, lng){
       if (!myMarker){
         myMarker = L.marker([lat, lng], {
-          icon: makeCircleIcon("#2563eb")
+          icon: makeCircleIcon("#2563eb", "#ffffff")
         }).addTo(map);
       } else {
         myMarker.setLatLng([lat, lng]);
@@ -564,9 +687,9 @@
 
       myMarker.bindPopup(`
         <div style="min-width:180px;">
-          <b>${escapeHtml(session.vehicleName || session.vehicleId || "自車両")}</b><br>
-          companyCode: ${escapeHtml(session.companyCode || "-")}<br>
-          vehicleId: ${escapeHtml(session.vehicleId || "-")}<br>
+          <b>${escapeHtml(session.vehicleId || "自車両")}</b><br>
+          会社: ${escapeHtml(settingsCache.companyName || "-")}<br>
+          状態: ${escapeHtml(session.statusLabel || "通常")}<br>
           lat: ${lat}<br>
           lng: ${lng}
         </div>
@@ -589,7 +712,7 @@
       }
 
       if (!session.companyCode || !session.vehicleId){
-        gpsStatus.textContent = "会社コードと車両IDを設定してください";
+        gpsStatus.textContent = "会社QRと車番設定が必要です";
         return;
       }
 
@@ -605,28 +728,15 @@
 
           try{
             await writeVehiclePosition(lat, lng, accuracy);
-            gpsStatus.innerHTML = `
-              GPS送信中<br>
-              lat: ${lat}<br>
-              lng: ${lng}<br>
-              accuracy: ${accuracy ?? "-"}m<br>
-              更新: ${new Date().toLocaleString("ja-JP")}
-            `;
+            gpsStatus.textContent = `GPS送信中 / 最終更新 ${new Date().toLocaleTimeString("ja-JP")}`;
           }catch(error){
             console.error(error);
-            gpsStatus.innerHTML = `
-              通信エラーでGPS送信に失敗しました。<br>
-              セッションは保持中です。<br>
-              電波復帰後に再送信されます。
-            `;
+            gpsStatus.textContent = "通信エラー中 / セッション保持中 / 復帰後再送信";
           }
         },
         (error) => {
           console.error(error);
-          gpsStatus.innerHTML = `
-            GPS取得エラー: ${escapeHtml(error.message)}<br>
-            ログアウトはしていません。
-          `;
+          gpsStatus.textContent = `GPS取得エラー / ログアウトはしていません`;
         },
         {
           enableHighAccuracy: true,
@@ -636,67 +746,75 @@
       );
     }
 
+    async function updateVehicleStatus(status, statusLabel){
+      if (!session.companyCode || !session.vehicleId){
+        alert("先に開始してください");
+        return;
+      }
+
+      const ok = confirm(`${statusLabel} にしますか？`);
+      if (!ok) return;
+
+      session.status = status;
+      session.statusLabel = statusLabel;
+      saveSession();
+      renderCompanyInfo();
+
+      try{
+        const vehicleRef = ref(db, `companies/${session.companyCode}/vehicles/${session.vehicleId}`);
+        await update(vehicleRef, {
+          status,
+          statusLabel,
+          statusUpdatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+
+        statusActionResult.textContent = `${statusLabel} に更新しました。`;
+      }catch(error){
+        console.error(error);
+        statusActionResult.textContent = `状態更新に失敗しました。通信状態を確認してください。`;
+      }
+    }
+
     async function removeVehicleOnLogout(){
       if (!session.companyCode || !session.vehicleId) return;
-
       const vehicleRef = ref(db, `companies/${session.companyCode}/vehicles/${session.vehicleId}`);
       await remove(vehicleRef);
     }
 
-    async function loginAndStart(newSession){
-      const nextSession = {
-        companyCode: newSession.companyCode.trim(),
-        vehicleId: newSession.vehicleId.trim(),
-        vehicleName: newSession.vehicleName.trim()
-      };
+    async function loginAndStart(){
+      const urlCompanyCode = getUrlCompanyCode() || session.companyCode || "";
+      const nextVehicleId = (vehicleIdInput.value || "").trim();
+      const nextDriverName = (driverNameInput.value || "").trim();
 
-      if (!nextSession.companyCode || !nextSession.vehicleId){
-        alert("会社コードと車両IDは必須です");
+      if (!urlCompanyCode){
+        alert("会社QRを読み取って companyCode を設定してください");
         return;
       }
 
-      const isChangingSession =
-        session.companyCode &&
-        session.vehicleId &&
-        (
-          session.companyCode !== nextSession.companyCode ||
-          session.vehicleId !== nextSession.vehicleId
-        );
-
-      if (isChangingSession){
-        const changeOk = confirm(
-          `現在の接続先から切り替えます。\n\n` +
-          `現在: ${session.companyCode} / ${session.vehicleId}\n` +
-          `変更後: ${nextSession.companyCode} / ${nextSession.vehicleId}\n\n` +
-          `OKで切り替えます。`
-        );
-        if (!changeOk) return;
+      if (!nextVehicleId){
+        alert("車番を入力してください");
+        return;
       }
 
-      session = nextSession;
+      session.companyCode = urlCompanyCode;
+      session.vehicleId = nextVehicleId;
+      session.driverName = nextDriverName;
+      session.status = session.status || "normal";
+      session.statusLabel = session.statusLabel || "通常";
+
       saveSession();
       applySessionToInputs();
-      renderCurrentInfo();
-      startPointsListener();
+      renderCompanyInfo();
+      startCompanyListeners();
       startGpsWatch();
 
-      gpsStatus.innerHTML = `
-        セッションを保存しました。<br>
-        会社コード: ${escapeHtml(session.companyCode)}<br>
-        車両ID: ${escapeHtml(session.vehicleId)}
-      `;
+      gpsStatus.textContent = "セッション保存済み / GPS開始中";
     }
 
     async function logout(){
       if (!session.companyCode || !session.vehicleId){
-        session = {
-          companyCode: "",
-          vehicleId: "",
-          vehicleName: ""
-        };
         clearSession();
-        applySessionToInputs();
-        renderCurrentInfo();
         gpsStatus.textContent = "ログアウトしました";
         return;
       }
@@ -707,11 +825,7 @@
         await removeVehicleOnLogout();
       }catch(error){
         console.error(error);
-        gpsStatus.innerHTML = `
-          ログアウト処理に失敗しました。<br>
-          通信状態を確認して再度実行してください。<br>
-          セッションは保持したままです。
-        `;
+        gpsStatus.textContent = "ログアウト処理失敗 / 通信確認後に再実行してください";
         startGpsWatch();
         return;
       }
@@ -721,78 +835,84 @@
       session = {
         companyCode: "",
         vehicleId: "",
-        vehicleName: ""
+        driverName: "",
+        status: "normal",
+        statusLabel: "通常"
       };
 
       clearSession();
       applySessionToInputs();
-      renderCurrentInfo();
-      gpsStatus.textContent = "ログアウトしました";
 
       if (myMarker){
         map.removeLayer(myMarker);
         myMarker = null;
       }
+
+      renderCompanyInfo();
+      gpsStatus.textContent = "ログアウトしました";
+      statusActionResult.textContent = "まだ操作していません。";
     }
 
     function setupFromUrlOrStorage(){
-      const params = getUrlParams();
       const saved = loadSession();
+      const urlCompanyCode = getUrlCompanyCode();
 
-      if (params.companyCode && params.vehicleId){
-        session = {
-          companyCode: params.companyCode,
-          vehicleId: params.vehicleId,
-          vehicleName: params.vehicleName || params.vehicleId
-        };
-        saveSession();
-      } else if (saved?.companyCode && saved?.vehicleId){
+      if (saved){
         session = {
           companyCode: saved.companyCode || "",
           vehicleId: saved.vehicleId || "",
-          vehicleName: saved.vehicleName || saved.vehicleId || ""
+          driverName: saved.driverName || "",
+          status: saved.status || "normal",
+          statusLabel: saved.statusLabel || "通常"
         };
       }
 
+      if (urlCompanyCode){
+        session.companyCode = urlCompanyCode;
+        saveSession();
+      }
+
       applySessionToInputs();
-      renderCurrentInfo();
+      renderCompanyInfo();
+
+      if (session.companyCode){
+        startCompanyListeners();
+      }
 
       if (session.companyCode && session.vehicleId){
-        startPointsListener();
         startGpsWatch();
       }
     }
 
     saveLoginBtn.addEventListener("click", async () => {
-      await loginAndStart({
-        companyCode: companyCodeInput.value,
-        vehicleId: vehicleIdInput.value,
-        vehicleName: vehicleNameInput.value
-      });
+      await loginAndStart();
     });
 
     logoutBtn.addEventListener("click", async () => {
       if (!session.companyCode || !session.vehicleId){
-        alert("現在ログインしていません");
+        alert("現在開始していません");
         return;
       }
 
       const first = confirm(
-        `ログアウト確認\n\n` +
-        `会社コード: ${session.companyCode}\n` +
-        `車両ID: ${session.vehicleId}\n` +
-        `表示名: ${session.vehicleName || session.vehicleId}\n\n` +
-        `OKでログアウト確認を進めます。`
+        `ログアウト確認\n\n会社: ${settingsCache.companyName || session.companyCode}\n車番: ${session.vehicleId}\n\nOKで確認を進めます。`
       );
       if (!first) return;
 
       const second = confirm(
-        `この操作で、現在の会社の車両表示を削除します。\n` +
-        `本当にログアウトしますか？`
+        `この操作で現在の車両表示は削除されます。\n本当にログアウトしますか？`
       );
       if (!second) return;
 
       await logout();
+    });
+
+    unloadingDoneBtn.addEventListener("click", async () => {
+      await updateVehicleStatus("unloading_completed", "荷下ろし完了");
+    });
+
+    washDoneBtn.addEventListener("click", async () => {
+      await updateVehicleStatus("ready_for_next_load", "残水・残コン処理完了");
     });
 
     window.addEventListener("beforeunload", () => {
